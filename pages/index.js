@@ -12,16 +12,16 @@ const [includeScanbacks, setIncludeScanbacks] = useState(false); const [scanback
 
 const [includeShipping, setIncludeShipping] = useState(false); const [shippingType, setShippingType] = useState("standard"); const [shippingCost, setShippingCost] = useState("10");
 
-const [otherCost, setOtherCost] = useState("0");
+const [includeAdditionalCosts, setIncludeAdditionalCosts] = useState(false); const [additionalCosts, setAdditionalCosts] = useState("0"); const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
 const handleShippingToggle = () => { const next = !includeShipping; setIncludeShipping(next); if (next && (!shippingCost || Number(shippingCost) === 0)) { setShippingCost(String(SHIPPING_ESTIMATES[shippingType])); } };
 
 const handleShippingTypeChange = (value) => { setShippingType(value); setShippingCost(String(SHIPPING_ESTIMATES[value])); };
 
-const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = includePrinting ? parseFloat(printingCost) || 0 : 0; const scanCost = includeScanbacks ? parseFloat(scanbackCost) || 0 : 0; const shipCost = includeShipping ? parseFloat(shippingCost) || 0 : 0; const miscCost = parseFloat(otherCost) || 0;
+const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = includePrinting ? parseFloat(printingCost) || 0 : 0; const scanCost = includeScanbacks ? parseFloat(scanbackCost) || 0 : 0; const shipCost = includeShipping ? parseFloat(shippingCost) || 0 : 0; const extraCost = includeAdditionalCosts ? parseFloat(additionalCosts) || 0 : 0;
 
 const mileageCost = miles * mileageRate;
-const totalExpenses = mileageCost + printCost + scanCost + shipCost + miscCost;
+const totalExpenses = mileageCost + printCost + scanCost + shipCost + extraCost;
 const netProfit = totalFee - totalExpenses;
 const profitPerMile = miles > 0 ? netProfit / miles : 0;
 
@@ -42,7 +42,7 @@ return {
   printCost,
   scanCost,
   shipCost,
-  miscCost,
+  extraCost,
   totalExpenses,
   netProfit,
   profitPerMile,
@@ -50,7 +50,7 @@ return {
   ratingClass,
 };
 
-}, [ fee, roundTripMiles, costPerMile, includePrinting, printingCost, includeScanbacks, scanbackCost, includeShipping, shippingCost, otherCost, ]);
+}, [ fee, roundTripMiles, costPerMile, includePrinting, printingCost, includeScanbacks, scanbackCost, includeShipping, shippingCost, includeAdditionalCosts, additionalCosts, ]);
 
 return ( <> <main className="page"> <div className="card"> <section className="hero"> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Fee Calculator</h1> <p className="heroText"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </section>
 
@@ -86,16 +86,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                 inputMode="decimal"
                 value={costPerMile}
                 onChange={(e) => setCostPerMile(e.target.value)}
-              />
-            </label>
-
-            <label>
-              <span>Other Cost</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={otherCost}
-                onChange={(e) => setOtherCost(e.target.value)}
               />
             </label>
           </div>
@@ -178,6 +168,52 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                 </label>
               </div>
             )}
+
+            <div className="additionalHeader">
+              <label className="toggleRow toggleGrow">
+                <input
+                  type="checkbox"
+                  checked={includeAdditionalCosts}
+                  onChange={() => setIncludeAdditionalCosts(!includeAdditionalCosts)}
+                />
+                <span>Include Additional Costs</span>
+              </label>
+              <button
+                type="button"
+                className="infoButton"
+                onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+              >
+                {showAdditionalInfo ? "Hide examples" : "What counts?"}
+              </button>
+            </div>
+
+            {showAdditionalInfo && (
+              <div className="infoBox">
+                <p className="infoTitle">Examples of additional costs:</p>
+                <ul>
+                  <li>Tolls</li>
+                  <li>Parking fees</li>
+                  <li>Extra time or waiting time</li>
+                  <li>Printing corrections or reprints</li>
+                  <li>Document drop-off or courier-related costs</li>
+                  <li>Last-minute job expenses not covered elsewhere</li>
+                </ul>
+              </div>
+            )}
+
+            {includeAdditionalCosts && (
+              <div className="subField">
+                <label>
+                  <span>Additional Costs</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={additionalCosts}
+                    onChange={(e) => setAdditionalCosts(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="tipBox">
@@ -222,7 +258,9 @@ return ( <> <main className="page"> <div className="card"> <section className="h
               {includeShipping && (
                 <div className="row"><span>Shipping</span><strong>{formatCurrency(values.shipCost)}</strong></div>
               )}
-              <div className="row"><span>Other Cost</span><strong>{formatCurrency(values.miscCost)}</strong></div>
+              {includeAdditionalCosts && (
+                <div className="row"><span>Additional Costs</span><strong>{formatCurrency(values.extraCost)}</strong></div>
+              )}
               <div className="row rowHighlight"><span>Profit Per Mile</span><strong>{formatCurrency(values.profitPerMile)}</strong></div>
             </div>
           </div>
@@ -365,6 +403,10 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       border: 1px solid #e2e8f0;
     }
 
+    .toggleGrow {
+      flex: 1;
+    }
+
     .toggleRow input {
       width: 18px;
       height: 18px;
@@ -388,6 +430,46 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       display: grid;
       gap: 14px;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .additionalHeader {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .infoButton {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      border-radius: 16px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .infoBox {
+      border: 1px solid #dbeafe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-left: 8px;
+    }
+
+    .infoTitle {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .infoBox ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 14px;
+      line-height: 1.55;
     }
 
     .tipBox {
@@ -559,6 +641,14 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       .statsGrid,
       .shippingBox {
         grid-template-columns: 1fr;
+      }
+
+      .additionalHeader {
+        flex-direction: column;
+      }
+
+      .infoButton {
+        padding: 12px 16px;
       }
 
       .statCard h3 {
