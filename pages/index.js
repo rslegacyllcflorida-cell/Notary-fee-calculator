@@ -1,24 +1,79 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function formatCurrency(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2, }).format(Number.isFinite(value) ? value : 0); }
 
-const SHIPPING_ESTIMATES = { standard: 10, expedited: 25, overnight: 35, };
+const DEFAULT_SETTINGS = { costPerMile: "0.67", costPerPage: "0.06", scanbackFee: "10", shippingStandard: "10", shippingExpedited: "25", shippingOvernight: "35", };
 
-export default function Home() { const [fee, setFee] = useState("100"); const [roundTripMiles, setRoundTripMiles] = useState("40"); const [costPerMile, setCostPerMile] = useState("0.67");
+function getShippingEstimates(settings) { return { standard: Number(settings.shippingStandard) || 0, expedited: Number(settings.shippingExpedited) || 0, overnight: Number(settings.shippingOvernight) || 0, }; }
 
-const [includePrinting, setIncludePrinting] = useState(true); const [printingCost, setPrintingCost] = useState("8");
+export default function Home() { const [showSettings, setShowSettings] = useState(false); const [settings, setSettings] = useState(DEFAULT_SETTINGS); const [settingsLoaded, setSettingsLoaded] = useState(false); const [settingsSaved, setSettingsSaved] = useState(false);
 
-const [includeScanbacks, setIncludeScanbacks] = useState(false); const [scanbackCost, setScanbackCost] = useState("0");
+const [fee, setFee] = useState("100"); const [roundTripMiles, setRoundTripMiles] = useState("40"); const [costPerMile, setCostPerMile] = useState(DEFAULT_SETTINGS.costPerMile);
 
-const [includeShipping, setIncludeShipping] = useState(false); const [shippingType, setShippingType] = useState("standard"); const [shippingCost, setShippingCost] = useState("10");
+const [includePrinting, setIncludePrinting] = useState(true); const [pages, setPages] = useState("140"); const [sets, setSets] = useState("2"); const [costPerPage, setCostPerPage] = useState(DEFAULT_SETTINGS.costPerPage);
+
+const [includeScanbacks, setIncludeScanbacks] = useState(false); const [scanbackCost, setScanbackCost] = useState(DEFAULT_SETTINGS.scanbackFee);
+
+const [includeShipping, setIncludeShipping] = useState(false); const [shippingType, setShippingType] = useState("standard"); const [shippingCost, setShippingCost] = useState(DEFAULT_SETTINGS.shippingStandard);
 
 const [includeAdditionalCosts, setIncludeAdditionalCosts] = useState(false); const [additionalCosts, setAdditionalCosts] = useState("0"); const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
-const handleShippingToggle = () => { const next = !includeShipping; setIncludeShipping(next); if (next && (!shippingCost || Number(shippingCost) === 0)) { setShippingCost(String(SHIPPING_ESTIMATES[shippingType])); } };
+useEffect(() => { if (typeof window === "undefined") return;
 
-const handleShippingTypeChange = (value) => { setShippingType(value); setShippingCost(String(SHIPPING_ESTIMATES[value])); };
+const saved = window.localStorage.getItem("notaryFeeCalculatorSettings");
+if (saved) {
+  try {
+    const parsed = JSON.parse(saved);
+    const merged = { ...DEFAULT_SETTINGS, ...parsed };
+    setSettings(merged);
+    setCostPerMile(merged.costPerMile);
+    setCostPerPage(merged.costPerPage);
+    setScanbackCost(merged.scanbackFee);
+    setShippingCost(merged.shippingStandard);
+  } catch (error) {
+    console.error("Failed to load settings", error);
+  }
+}
 
-const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = includePrinting ? parseFloat(printingCost) || 0 : 0; const scanCost = includeScanbacks ? parseFloat(scanbackCost) || 0 : 0; const shipCost = includeShipping ? parseFloat(shippingCost) || 0 : 0; const extraCost = includeAdditionalCosts ? parseFloat(additionalCosts) || 0 : 0;
+setSettingsLoaded(true);
+
+}, []);
+
+const saveSettings = () => { if (typeof window === "undefined") return;
+
+window.localStorage.setItem(
+  "notaryFeeCalculatorSettings",
+  JSON.stringify(settings)
+);
+
+setCostPerMile(settings.costPerMile);
+setCostPerPage(settings.costPerPage);
+setScanbackCost(settings.scanbackFee);
+
+const shippingEstimates = getShippingEstimates(settings);
+setShippingCost(String(shippingEstimates[shippingType] || 0));
+
+setSettingsSaved(true);
+setTimeout(() => setSettingsSaved(false), 2000);
+
+};
+
+const resetSettings = () => { setSettings(DEFAULT_SETTINGS); };
+
+const handleShippingToggle = () => { const next = !includeShipping; setIncludeShipping(next);
+
+if (next) {
+  const shippingEstimates = getShippingEstimates(settings);
+  setShippingCost(String(shippingEstimates[shippingType] || 0));
+}
+
+};
+
+const handleShippingTypeChange = (value) => { setShippingType(value); const shippingEstimates = getShippingEstimates(settings); setShippingCost(String(shippingEstimates[value] || 0)); };
+
+const printingCost = useMemo(() => { const pageCount = parseFloat(pages) || 0; const setCount = parseFloat(sets) || 0; const pageRate = parseFloat(costPerPage) || 0; return pageCount * setCount * pageRate; }, [pages, sets, costPerPage]);
+
+const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = includePrinting ? printingCost : 0; const scanCost = includeScanbacks ? parseFloat(scanbackCost) || 0 : 0; const shipCost = includeShipping ? parseFloat(shippingCost) || 0 : 0; const extraCost = includeAdditionalCosts ? parseFloat(additionalCosts) || 0 : 0;
 
 const mileageCost = miles * mileageRate;
 const totalExpenses = mileageCost + printCost + scanCost + shipCost + extraCost;
@@ -52,16 +107,166 @@ return {
 
 }, [ fee, roundTripMiles, costPerMile, includePrinting, printingCost, includeScanbacks, scanbackCost, includeShipping, shippingCost, includeAdditionalCosts, additionalCosts, ]);
 
-return ( <> <main className="page"> <div className="card"> <section className="hero"> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Fee Calculator</h1> <p className="heroText"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </section>
+return ( <> <main className="page"> <div className="card"> <section className="hero"> <div className="heroTop"> <div> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Fee Calculator</h1> <p className="heroText"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </div>
 
-<section className="contentGrid">
+<button
+            type="button"
+            className="settingsButton"
+            onClick={() => setShowSettings(!showSettings)}
+          >
+            ⚙️ {showSettings ? "Close Settings" : "Settings"}
+          </button>
+        </div>
+      </section>
+
+      {showSettings && (
+        <section className="settingsPanel">
+          <div className="settingsHeaderRow">
+            <div>
+              <p className="settingsEyebrow">Saved Defaults</p>
+              <h2 className="settingsTitle">Settings</h2>
+              <p className="settingsText">
+                Save your usual cost assumptions here. The calculator will use
+                these as defaults, but you can still override them for any job.
+              </p>
+            </div>
+          </div>
+
+          <div className="settingsGrid">
+            <div className="settingsCard">
+              <h3>Mileage Defaults</h3>
+              <label>
+                <span>Default Cost Per Mile</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={settings.costPerMile}
+                  onChange={(e) =>
+                    setSettings({ ...settings, costPerMile: e.target.value })
+                  }
+                />
+              </label>
+              <p className="helperText">
+                Used to estimate travel cost for each assignment.
+              </p>
+            </div>
+
+            <div className="settingsCard">
+              <h3>Printing Defaults</h3>
+              <label>
+                <span>Default Cost Per Page</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={settings.costPerPage}
+                  onChange={(e) =>
+                    setSettings({ ...settings, costPerPage: e.target.value })
+                  }
+                />
+              </label>
+              <p className="helperText">
+                Your average cost including paper and ink or toner.
+              </p>
+            </div>
+
+            <div className="settingsCard">
+              <h3>Scanback Defaults</h3>
+              <label>
+                <span>Default Scanback Fee</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={settings.scanbackFee}
+                  onChange={(e) =>
+                    setSettings({ ...settings, scanbackFee: e.target.value })
+                  }
+                />
+              </label>
+              <p className="helperText">
+                Covers extra time spent scanning, uploading, and processing.
+              </p>
+            </div>
+
+            <div className="settingsCard">
+              <h3>Shipping Defaults</h3>
+              <div className="shippingDefaultsGrid">
+                <label>
+                  <span>Standard</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={settings.shippingStandard}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        shippingStandard: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>Expedited</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={settings.shippingExpedited}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        shippingExpedited: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>Overnight</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={settings.shippingOvernight}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        shippingOvernight: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              <p className="helperText">
+                Used to auto-fill shipping when selected in the calculator.
+              </p>
+            </div>
+          </div>
+
+          <div className="settingsActions">
+            <button type="button" className="saveButton" onClick={saveSettings}>
+              {settingsSaved ? "Saved" : "Save Settings"}
+            </button>
+            <button type="button" className="resetButton" onClick={resetSettings}>
+              Reset to Defaults
+            </button>
+            {settingsLoaded && (
+              <p className="settingsNote">
+                Settings are saved on this device and browser.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section className="contentGrid">
         <div className="panel softPanel">
           <h2>Job Details</h2>
 
           <div className="formGrid">
             <label>
               <span>Offered Fee</span>
-<small>What the company is offering for this job</small>
+              <small className="fieldHint">
+                What the company is offering for this job
+              </small>
               <input
                 type="number"
                 inputMode="decimal"
@@ -101,16 +306,38 @@ return ( <> <main className="page"> <div className="card"> <section className="h
               <span>Include Printing</span>
             </label>
             {includePrinting && (
-              <div className="subField">
+              <div className="subFieldGrid">
                 <label>
-                  <span>Printing Cost</span>
+                  <span>Total Pages</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    value={printingCost}
-                    onChange={(e) => setPrintingCost(e.target.value)}
+                    value={pages}
+                    onChange={(e) => setPages(e.target.value)}
                   />
                 </label>
+                <label>
+                  <span>Number of Sets</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={sets}
+                    onChange={(e) => setSets(e.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>Cost Per Page</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={costPerPage}
+                    onChange={(e) => setCostPerPage(e.target.value)}
+                  />
+                </label>
+                <div className="calcPreview">
+                  <span>Estimated Printing Cost</span>
+                  <strong>{formatCurrency(printingCost)}</strong>
+                </div>
               </div>
             )}
 
@@ -219,8 +446,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
 
           <div className="tipBox">
             Tip: use round-trip miles so the estimate reflects the full job,
-            not just the drive there. Shipping estimates auto-fill, but you
-            can always override them.
+            not just the drive there. Shipping estimates auto-fill from your
+            saved settings, but you can always override them.
           </div>
         </div>
 
@@ -273,8 +500,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
               taxes, and any unpaid admin work related to the assignment.
             </p>
             <p>
-              Mileage rate is editable so you can use your preferred
-              estimate for gas, wear and tear, and vehicle expenses.
+              Settings are saved locally in your browser and can be changed
+              anytime.
             </p>
           </div>
         </div>
@@ -310,6 +537,25 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       padding: 32px 24px;
     }
 
+    .heroTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .settingsButton {
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
     .eyebrow {
       margin: 0 0 10px;
       font-size: 12px;
@@ -331,6 +577,100 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       font-size: 17px;
       line-height: 1.55;
       color: #e2e8f0;
+    }
+
+    .settingsPanel {
+      padding: 24px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fcfcff;
+    }
+
+    .settingsEyebrow {
+      margin: 0 0 6px;
+      color: #7c3aed;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .settingsTitle {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .settingsText {
+      margin: 10px 0 0;
+      color: #475569;
+      line-height: 1.55;
+      max-width: 760px;
+    }
+
+    .settingsGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .settingsCard {
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 18px;
+      background: white;
+    }
+
+    .settingsCard h3 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    .helperText {
+      margin: 10px 0 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    .shippingDefaultsGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .settingsActions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .saveButton,
+    .resetButton {
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .saveButton {
+      border: none;
+      background: #6d28d9;
+      color: white;
+    }
+
+    .resetButton {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #334155;
+    }
+
+    .settingsNote {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
     }
 
     .contentGrid {
@@ -368,6 +708,14 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       font-size: 14px;
       font-weight: 700;
       color: #334155;
+    }
+
+    .fieldHint {
+      display: block;
+      margin: -2px 0 8px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     input,
@@ -425,6 +773,35 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     .subField,
     .shippingBox {
       padding: 0 4px 0 8px;
+    }
+
+    .subFieldGrid {
+      padding: 0 4px 0 8px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .calcPreview {
+      border: 1px solid #ddd6fe;
+      background: #faf5ff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .calcPreview span {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6d28d9;
+    }
+
+    .calcPreview strong {
+      margin-top: 6px;
+      font-size: 24px;
+      color: #4c1d95;
     }
 
     .shippingBox {
@@ -611,8 +988,13 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     }
 
     @media (max-width: 900px) {
-      .contentGrid {
+      .contentGrid,
+      .settingsGrid {
         grid-template-columns: 1fr;
+      }
+
+      .heroTop {
+        flex-direction: column;
       }
     }
 
@@ -621,15 +1003,17 @@ return ( <> <main className="page"> <div className="card"> <section className="h
         padding: 12px;
       }
 
-      .hero {
-        padding: 26px 18px;
+      .hero,
+      .settingsPanel {
+        padding: 18px;
       }
 
       .hero h1 {
         font-size: 34px;
       }
 
-      .heroText {
+      .heroText,
+      .settingsText {
         font-size: 15px;
       }
 
@@ -640,15 +1024,22 @@ return ( <> <main className="page"> <div className="card"> <section className="h
 
       .formGrid,
       .statsGrid,
-      .shippingBox {
+      .shippingBox,
+      .subFieldGrid,
+      .shippingDefaultsGrid {
         grid-template-columns: 1fr;
       }
 
-      .additionalHeader {
+      .additionalHeader,
+      .settingsActions {
         flex-direction: column;
+        align-items: stretch;
       }
 
-      .infoButton {
+      .infoButton,
+      .settingsButton,
+      .saveButton,
+      .resetButton {
         padding: 12px 16px;
       }
 
