@@ -2,242 +2,448 @@ import { useMemo, useState } from "react";
 
 function formatCurrency(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2, }).format(Number.isFinite(value) ? value : 0); }
 
-function formatNumber(value) { return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2, }).format(Number.isFinite(value) ? value : 0); }
+export default function Home() { const [fee, setFee] = useState("100"); const [roundTripMiles, setRoundTripMiles] = useState("40"); const [costPerMile, setCostPerMile] = useState("0.67"); const [printingCost, setPrintingCost] = useState("8"); const [scanbackCost, setScanbackCost] = useState("0"); const [otherCost, setOtherCost] = useState("0");
 
-export default function Home() { const [fee, setFee] = useState(""); const [roundTripMiles, setRoundTripMiles] = useState(""); const [costPerMile, setCostPerMile] = useState("0.67"); const [printingCost, setPrintingCost] = useState(""); const [scanbackFee, setScanbackFee] = useState(""); const [otherCost, setOtherCost] = useState("");
-
-const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = parseFloat(printingCost) || 0; const scanCost = parseFloat(scanbackFee) || 0; const miscCost = parseFloat(otherCost) || 0;
+const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = parseFloat(printingCost) || 0; const scanCost = parseFloat(scanbackCost) || 0; const miscCost = parseFloat(otherCost) || 0;
 
 const mileageCost = miles * mileageRate;
 const totalExpenses = mileageCost + printCost + scanCost + miscCost;
 const netProfit = totalFee - totalExpenses;
-const profitPerMile = miles > 0 ? netProfit / miles : netProfit;
+const profitPerMile = miles > 0 ? netProfit / miles : 0;
 
 let rating = "Solid";
-let ratingStyle = "bg-emerald-100 text-emerald-800 border-emerald-200";
+let ratingClass = "pill pill-good";
 
 if (netProfit < 0) {
   rating = "Losing Money";
-  ratingStyle = "bg-rose-100 text-rose-700 border-rose-200";
+  ratingClass = "pill pill-bad";
 } else if (netProfit < 40) {
   rating = "Low Profit";
-  ratingStyle = "bg-amber-100 text-amber-800 border-amber-200";
+  ratingClass = "pill pill-warn";
 }
 
 return {
   totalFee,
-  miles,
-  mileageRate,
+  mileageCost,
   printCost,
   scanCost,
   miscCost,
-  mileageCost,
   totalExpenses,
   netProfit,
   profitPerMile,
   rating,
-  ratingStyle,
+  ratingClass,
 };
 
-}, [fee, roundTripMiles, costPerMile, printingCost, scanbackFee, otherCost]);
+}, [fee, roundTripMiles, costPerMile, printingCost, scanbackCost, otherCost]);
 
-return ( <main className="min-h-screen bg-slate-100 px-4 py-8 font-sans sm:px-6"> <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/60"> <div className="bg-gradient-to-r from-slate-900 to-violet-700 px-6 py-8 text-white sm:px-8"> <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-violet-200"> Notary Toolkit </p> <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl"> Notary Fee Calculator </h1> <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </div>
+return ( <> <main className="page"> <div className="card"> <section className="hero"> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Fee Calculator</h1> <p className="heroText"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </section>
 
-<div className="grid gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.05fr_0.95fr]">
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <h2 className="text-lg font-bold text-slate-900">Job Details</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Signing Fee
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={fee}
-              onChange={(e) => setFee(e.target.value)}
-              placeholder="100"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
+<section className="contentGrid">
+        <div className="panel softPanel">
+          <h2>Job Details</h2>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Round-Trip Miles
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.1"
-              value={roundTripMiles}
-              onChange={(e) => setRoundTripMiles(e.target.value)}
-              placeholder="40"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
+          <div className="formGrid">
+            <label>
+              <span>Signing Fee</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={fee}
+                onChange={(e) => setFee(e.target.value)}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Cost Per Mile
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={costPerMile}
-              onChange={(e) => setCostPerMile(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
+            <label>
+              <span>Round-Trip Miles</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={roundTripMiles}
+                onChange={(e) => setRoundTripMiles(e.target.value)}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Printing Cost
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={printingCost}
-              onChange={(e) => setPrintingCost(e.target.value)}
-              placeholder="8"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
+            <label>
+              <span>Cost Per Mile</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={costPerMile}
+                onChange={(e) => setCostPerMile(e.target.value)}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Scanback Cost
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={scanbackFee}
-              onChange={(e) => setScanbackFee(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
+            <label>
+              <span>Printing Cost</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={printingCost}
+                onChange={(e) => setPrintingCost(e.target.value)}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-slate-700">
-              Other Cost
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={otherCost}
-              onChange={(e) => setOtherCost(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            />
-          </label>
-        </div>
+            <label>
+              <span>Scanback Cost</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={scanbackCost}
+                onChange={(e) => setScanbackCost(e.target.value)}
+              />
+            </label>
 
-        <div className="mt-5 rounded-2xl border border-violet-200 bg-violet-50 p-4">
-          <p className="text-sm text-violet-900">
+            <label>
+              <span>Other Cost</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={otherCost}
+                onChange={(e) => setOtherCost(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="tipBox">
             Tip: use round-trip miles so the estimate reflects the full job,
             not just the drive there.
-          </p>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <div className={`rounded-2xl border p-5 ${values.ratingStyle}`}>
-          <p className="text-sm font-semibold uppercase tracking-wide">
-            Assignment Snapshot
-          </p>
-          <p className="mt-2 text-3xl font-extrabold">{values.rating}</p>
-          <p className="mt-2 text-sm">
-            Based on your fee and estimated job-related costs.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-              Net Profit
-            </p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">
-              {formatCurrency(values.netProfit)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-              Total Expenses
-            </p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">
-              {formatCurrency(values.totalExpenses)}
-            </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-slate-900">Breakdown</h2>
-          <div className="mt-4 space-y-3 text-sm sm:text-base">
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-              <span className="font-medium text-slate-700">Fee</span>
-              <span className="font-bold text-slate-900">
-                {formatCurrency(values.totalFee)}
-              </span>
+        <div className="rightCol">
+          <div className="panel snapshotPanel">
+            <p className="label">Assignment Snapshot</p>
+            <div className={values.ratingClass}>{values.rating}</div>
+            <p className="snapshotText">
+              Based on your fee and estimated job-related costs.
+            </p>
+          </div>
+
+          <div className="statsGrid">
+            <div className="statCard statProfit">
+              <p className="label">Net Profit</p>
+              <h3>{formatCurrency(values.netProfit)}</h3>
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-              <span className="font-medium text-slate-700">Mileage Cost</span>
-              <span className="font-bold text-slate-900">
-                {formatCurrency(values.mileageCost)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-              <span className="font-medium text-slate-700">Printing</span>
-              <span className="font-bold text-slate-900">
-                {formatCurrency(values.printCost)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-              <span className="font-medium text-slate-700">Scanbacks</span>
-              <span className="font-bold text-slate-900">
-                {formatCurrency(values.scanCost)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-              <span className="font-medium text-slate-700">Other Cost</span>
-              <span className="font-bold text-slate-900">
-                {formatCurrency(values.miscCost)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
-              <span className="font-semibold text-violet-900">Profit Per Mile</span>
-              <span className="font-bold text-violet-900">
-                {formatCurrency(values.profitPerMile)}
-              </span>
+
+            <div className="statCard statExpense">
+              <p className="label">Total Expenses</p>
+              <h3>{formatCurrency(values.totalExpenses)}</h3>
             </div>
           </div>
-        </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-900">
-            This calculator provides an estimate only. Actual profitability
-            depends on your true operating costs, time, taxes, and any
-            unpaid admin work related to the assignment.
-          </p>
-          <p className="mt-2 text-sm text-amber-900">
-            Mileage rate is editable so you can use your preferred estimate
-            for gas, wear and tear, and vehicle expenses.
-          </p>
+          <div className="panel">
+            <h2>Breakdown</h2>
+            <div className="rows">
+              <div className="row"><span>Fee</span><strong>{formatCurrency(values.totalFee)}</strong></div>
+              <div className="row"><span>Mileage Cost</span><strong>{formatCurrency(values.mileageCost)}</strong></div>
+              <div className="row"><span>Printing</span><strong>{formatCurrency(values.printCost)}</strong></div>
+              <div className="row"><span>Scanbacks</span><strong>{formatCurrency(values.scanCost)}</strong></div>
+              <div className="row"><span>Other Cost</span><strong>{formatCurrency(values.miscCost)}</strong></div>
+              <div className="row rowHighlight"><span>Profit Per Mile</span><strong>{formatCurrency(values.profitPerMile)}</strong></div>
+            </div>
+          </div>
+
+          <div className="notice">
+            <p>
+              This calculator provides an estimate only. Actual
+              profitability depends on your true operating costs, time,
+              taxes, and any unpaid admin work related to the assignment.
+            </p>
+            <p>
+              Mileage rate is editable so you can use your preferred
+              estimate for gas, wear and tear, and vehicle expenses.
+            </p>
+          </div>
         </div>
       </section>
     </div>
-  </div>
-</main>
+  </main>
+
+  <style jsx>{`
+    :global(body) {
+      margin: 0;
+      background: #f1f5f9;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #0f172a;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .card {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #6d28d9);
+      color: white;
+      padding: 32px 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #ddd6fe;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.05;
+    }
+
+    .heroText {
+      margin: 14px 0 0;
+      max-width: 700px;
+      font-size: 17px;
+      line-height: 1.55;
+      color: #e2e8f0;
+    }
+
+    .contentGrid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      padding: 20px;
+    }
+
+    .softPanel {
+      background: #f8fafc;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 24px;
+    }
+
+    .formGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    label span {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 15px;
+      font-size: 16px;
+      outline: none;
+      background: white;
+    }
+
+    input:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+    }
+
+    .tipBox {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #ede9fe;
+      color: #4c1d95;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .rightCol {
+      display: grid;
+      gap: 16px;
+    }
+
+    .snapshotPanel {
+      border-color: #ddd6fe;
+      background: #faf5ff;
+    }
+
+    .label {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .snapshotText {
+      margin: 12px 0 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #475569;
+    }
+
+    .pill {
+      display: inline-block;
+      margin-top: 12px;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .pill-good {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pill-warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .pill-bad {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+
+    .statsGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .statCard {
+      border-radius: 22px;
+      padding: 20px;
+      border: 1px solid;
+    }
+
+    .statProfit {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .statExpense {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .statCard h3 {
+      margin: 10px 0 0;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+
+    .rows {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #f8fafc;
+      font-size: 15px;
+    }
+
+    .row span {
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .rowHighlight {
+      background: #ede9fe;
+    }
+
+    .rowHighlight span,
+    .rowHighlight strong {
+      color: #5b21b6;
+    }
+
+    .notice {
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 20px;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .notice p {
+      margin: 0;
+    }
+
+    .notice p + p {
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .contentGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 12px;
+      }
+
+      .hero {
+        padding: 26px 18px;
+      }
+
+      .hero h1 {
+        font-size: 34px;
+      }
+
+      .heroText {
+        font-size: 15px;
+      }
+
+      .contentGrid {
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .formGrid,
+      .statsGrid {
+        grid-template-columns: 1fr;
+      }
+
+      .statCard h3 {
+        font-size: 28px;
+      }
+
+      .row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  `}</style>
+</>
 
 ); }
