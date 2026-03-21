@@ -60,7 +60,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
 
           <div className="formGrid">
             <label>
-              <span>Signing Fee</span>
+              <span>Offered Fee</span>
+<small>What the company is offering for this job</small>
               <input
                 type="number"
                 inputMode="decimal"
