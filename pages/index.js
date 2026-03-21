@@ -2,12 +2,26 @@ import { useMemo, useState } from "react";
 
 function formatCurrency(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2, }).format(Number.isFinite(value) ? value : 0); }
 
-export default function Home() { const [fee, setFee] = useState("100"); const [roundTripMiles, setRoundTripMiles] = useState("40"); const [costPerMile, setCostPerMile] = useState("0.67"); const [printingCost, setPrintingCost] = useState("8"); const [scanbackCost, setScanbackCost] = useState("0"); const [otherCost, setOtherCost] = useState("0");
+const SHIPPING_ESTIMATES = { standard: 10, expedited: 25, overnight: 35, };
 
-const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = parseFloat(printingCost) || 0; const scanCost = parseFloat(scanbackCost) || 0; const miscCost = parseFloat(otherCost) || 0;
+export default function Home() { const [fee, setFee] = useState("100"); const [roundTripMiles, setRoundTripMiles] = useState("40"); const [costPerMile, setCostPerMile] = useState("0.67");
+
+const [includePrinting, setIncludePrinting] = useState(true); const [printingCost, setPrintingCost] = useState("8");
+
+const [includeScanbacks, setIncludeScanbacks] = useState(false); const [scanbackCost, setScanbackCost] = useState("0");
+
+const [includeShipping, setIncludeShipping] = useState(false); const [shippingType, setShippingType] = useState("standard"); const [shippingCost, setShippingCost] = useState("10");
+
+const [otherCost, setOtherCost] = useState("0");
+
+const handleShippingToggle = () => { const next = !includeShipping; setIncludeShipping(next); if (next && (!shippingCost || Number(shippingCost) === 0)) { setShippingCost(String(SHIPPING_ESTIMATES[shippingType])); } };
+
+const handleShippingTypeChange = (value) => { setShippingType(value); setShippingCost(String(SHIPPING_ESTIMATES[value])); };
+
+const values = useMemo(() => { const totalFee = parseFloat(fee) || 0; const miles = parseFloat(roundTripMiles) || 0; const mileageRate = parseFloat(costPerMile) || 0; const printCost = includePrinting ? parseFloat(printingCost) || 0 : 0; const scanCost = includeScanbacks ? parseFloat(scanbackCost) || 0 : 0; const shipCost = includeShipping ? parseFloat(shippingCost) || 0 : 0; const miscCost = parseFloat(otherCost) || 0;
 
 const mileageCost = miles * mileageRate;
-const totalExpenses = mileageCost + printCost + scanCost + miscCost;
+const totalExpenses = mileageCost + printCost + scanCost + shipCost + miscCost;
 const netProfit = totalFee - totalExpenses;
 const profitPerMile = miles > 0 ? netProfit / miles : 0;
 
@@ -27,6 +41,7 @@ return {
   mileageCost,
   printCost,
   scanCost,
+  shipCost,
   miscCost,
   totalExpenses,
   netProfit,
@@ -35,7 +50,7 @@ return {
   ratingClass,
 };
 
-}, [fee, roundTripMiles, costPerMile, printingCost, scanbackCost, otherCost]);
+}, [ fee, roundTripMiles, costPerMile, includePrinting, printingCost, includeScanbacks, scanbackCost, includeShipping, shippingCost, otherCost, ]);
 
 return ( <> <main className="page"> <div className="card"> <section className="hero"> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Fee Calculator</h1> <p className="heroText"> Enter the job details and instantly see your estimated expenses, net profit, and whether the assignment is worth it. </p> </section>
 
@@ -75,26 +90,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
             </label>
 
             <label>
-              <span>Printing Cost</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={printingCost}
-                onChange={(e) => setPrintingCost(e.target.value)}
-              />
-            </label>
-
-            <label>
-              <span>Scanback Cost</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={scanbackCost}
-                onChange={(e) => setScanbackCost(e.target.value)}
-              />
-            </label>
-
-            <label>
               <span>Other Cost</span>
               <input
                 type="number"
@@ -105,9 +100,90 @@ return ( <> <main className="page"> <div className="card"> <section className="h
             </label>
           </div>
 
+          <div className="toggleSection">
+            <label className="toggleRow">
+              <input
+                type="checkbox"
+                checked={includePrinting}
+                onChange={() => setIncludePrinting(!includePrinting)}
+              />
+              <span>Include Printing</span>
+            </label>
+            {includePrinting && (
+              <div className="subField">
+                <label>
+                  <span>Printing Cost</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={printingCost}
+                    onChange={(e) => setPrintingCost(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            <label className="toggleRow">
+              <input
+                type="checkbox"
+                checked={includeScanbacks}
+                onChange={() => setIncludeScanbacks(!includeScanbacks)}
+              />
+              <span>Include Scanbacks</span>
+            </label>
+            {includeScanbacks && (
+              <div className="subField">
+                <label>
+                  <span>Scanback Cost</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={scanbackCost}
+                    onChange={(e) => setScanbackCost(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            <label className="toggleRow">
+              <input
+                type="checkbox"
+                checked={includeShipping}
+                onChange={handleShippingToggle}
+              />
+              <span>Include Shipping</span>
+            </label>
+            {includeShipping && (
+              <div className="shippingBox">
+                <label>
+                  <span>Delivery Type</span>
+                  <select
+                    value={shippingType}
+                    onChange={(e) => handleShippingTypeChange(e.target.value)}
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="expedited">Expedited</option>
+                    <option value="overnight">Overnight</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Shipping Cost</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={shippingCost}
+                    onChange={(e) => setShippingCost(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
           <div className="tipBox">
             Tip: use round-trip miles so the estimate reflects the full job,
-            not just the drive there.
+            not just the drive there. Shipping estimates auto-fill, but you
+            can always override them.
           </div>
         </div>
 
@@ -137,8 +213,15 @@ return ( <> <main className="page"> <div className="card"> <section className="h
             <div className="rows">
               <div className="row"><span>Fee</span><strong>{formatCurrency(values.totalFee)}</strong></div>
               <div className="row"><span>Mileage Cost</span><strong>{formatCurrency(values.mileageCost)}</strong></div>
-              <div className="row"><span>Printing</span><strong>{formatCurrency(values.printCost)}</strong></div>
-              <div className="row"><span>Scanbacks</span><strong>{formatCurrency(values.scanCost)}</strong></div>
+              {includePrinting && (
+                <div className="row"><span>Printing</span><strong>{formatCurrency(values.printCost)}</strong></div>
+              )}
+              {includeScanbacks && (
+                <div className="row"><span>Scanbacks</span><strong>{formatCurrency(values.scanCost)}</strong></div>
+              )}
+              {includeShipping && (
+                <div className="row"><span>Shipping</span><strong>{formatCurrency(values.shipCost)}</strong></div>
+              )}
               <div className="row"><span>Other Cost</span><strong>{formatCurrency(values.miscCost)}</strong></div>
               <div className="row rowHighlight"><span>Profit Per Mile</span><strong>{formatCurrency(values.profitPerMile)}</strong></div>
             </div>
@@ -248,7 +331,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       color: #334155;
     }
 
-    input {
+    input,
+    select {
       width: 100%;
       box-sizing: border-box;
       border: 1px solid #cbd5e1;
@@ -259,9 +343,51 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       background: white;
     }
 
-    input:focus {
+    input:focus,
+    select:focus {
       border-color: #7c3aed;
       box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+    }
+
+    .toggleSection {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .toggleRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid #e2e8f0;
+    }
+
+    .toggleRow input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .toggleRow span {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .subField,
+    .shippingBox {
+      padding: 0 4px 0 8px;
+    }
+
+    .shippingBox {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .tipBox {
@@ -430,7 +556,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       }
 
       .formGrid,
-      .statsGrid {
+      .statsGrid,
+      .shippingBox {
         grid-template-columns: 1fr;
       }
 
