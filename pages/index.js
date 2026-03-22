@@ -28,21 +28,7 @@ function getHolidayName(date) { const year = date.getFullYear(); const previousY
 
 const match = holidays.find((holiday) => sameDate(holiday.date, date)); return match ? match.name : null; }
 
-function isBusinessDayForRescission(date) {
-  const day = date.getDay();
-
-  // Sunday = 0 (NOT business day)
-  if (day === 0) {
-    return { counted: false, reason: "Sunday" };
-  }
-
-  // Check holiday
-  const holidayName = getHolidayName(date);
-  if (holidayName) {
-    return { counted: false, reason: holidayName };
-  }
-
-  return { counted: true, reason: "Business Day" }; if (date.getDay() === 0) return { counted: false, reason: "Sunday (not counted)" };
+function isBusinessDayForRescission(date) { if (date.getDay() === 0) return { counted: false, reason: "Sunday (not counted)" };
 
 const holidayName = getHolidayName(date); if (holidayName) { return { counted: false, reason: ${holidayName} (not counted) }; }
 
