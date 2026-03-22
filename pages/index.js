@@ -10,29 +10,25 @@ function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() +
 
 function formatLongDate(date) { return date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", }); }
 
-function nthWeekdayOfMonth(year, month, weekday, nth) { const first = new Date(year, month, 1); const firstWeekday = first.getDay(); const offset = (weekday - firstWeekday + 7) % 7; return new Date(year, month, 1 + offset + (nth - 1) * 7); }
+function nthWeekdayOfMonth(year, month, weekday, nth) { const first = new Date(year, month, 1); const offset = (weekday - first.getDay() + 7) % 7; return new Date(year, month, 1 + offset + (nth - 1) * 7); }
 
 function lastWeekdayOfMonth(year, month, weekday) { const last = new Date(year, month + 1, 0); const offset = (last.getDay() - weekday + 7) % 7; return new Date(year, month, last.getDate() - offset); }
 
-function observedHoliday(date) { const d = new Date(date); const day = d.getDay(); if (day === 6) return addDays(d, -1); // Saturday observed Friday if (day === 0) return addDays(d, 1);  // Sunday observed Monday return d; }
+function observedHoliday(date) { const d = new Date(date); const day = d.getDay(); if (day === 6) return addDays(d, -1); // Saturday -> Friday if (day === 0) return addDays(d, 1); // Sunday -> Monday return d; }
 
 function sameDate(a, b) { return ( a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate() ); }
 
-function getFederalHolidays(year) { const holidays = [];
+function getFederalHolidays(year) { return [ { name: "New Year's Day", date: observedHoliday(new Date(year, 0, 1)) }, { name: "Martin Luther King Jr. Day", date: nthWeekdayOfMonth(year, 0, 1, 3) }, { name: "Washington's Birthday", date: nthWeekdayOfMonth(year, 1, 1, 3) }, { name: "Memorial Day", date: lastWeekdayOfMonth(year, 4, 1) }, { name: "Juneteenth National Independence Day", date: observedHoliday(new Date(year, 5, 19)) }, { name: "Independence Day", date: observedHoliday(new Date(year, 6, 4)) }, { name: "Labor Day", date: nthWeekdayOfMonth(year, 8, 1, 1) }, { name: "Columbus Day", date: nthWeekdayOfMonth(year, 9, 1, 2) }, { name: "Veterans Day", date: observedHoliday(new Date(year, 10, 11)) }, { name: "Thanksgiving Day", date: nthWeekdayOfMonth(year, 10, 4, 4) }, { name: "Christmas Day", date: observedHoliday(new Date(year, 11, 25)) }, ]; }
 
-holidays.push({ name: "New Year's Day", date: observedHoliday(new Date(year, 0, 1)) }); holidays.push({ name: "Martin Luther King Jr. Day", date: nthWeekdayOfMonth(year, 0, 1, 3) }); holidays.push({ name: "Washington's Birthday", date: nthWeekdayOfMonth(year, 1, 1, 3) }); holidays.push({ name: "Memorial Day", date: lastWeekdayOfMonth(year, 4, 1) }); holidays.push({ name: "Juneteenth National Independence Day", date: observedHoliday(new Date(year, 5, 19)) }); holidays.push({ name: "Independence Day", date: observedHoliday(new Date(year, 6, 4)) }); holidays.push({ name: "Labor Day", date: nthWeekdayOfMonth(year, 8, 1, 1) }); holidays.push({ name: "Columbus Day", date: nthWeekdayOfMonth(year, 9, 1, 2) }); holidays.push({ name: "Veterans Day", date: observedHoliday(new Date(year, 10, 11)) }); holidays.push({ name: "Thanksgiving Day", date: nthWeekdayOfMonth(year, 10, 4, 4) }); holidays.push({ name: "Christmas Day", date: observedHoliday(new Date(year, 11, 25)) });
-
-return holidays; }
-
-function getHolidayName(date) { const year = date.getFullYear(); const previousYear = year - 1; const nextYear = year + 1; const holidays = [ ...getFederalHolidays(previousYear), ...getFederalHolidays(year), ...getFederalHolidays(nextYear), ];
+function getHolidayName(date) { const year = date.getFullYear(); const holidays = [ ...getFederalHolidays(year - 1), ...getFederalHolidays(year), ...getFederalHolidays(year + 1), ];
 
 const match = holidays.find((holiday) => sameDate(holiday.date, date)); return match ? match.name : null; }
 
-function isBusinessDayForRescission(date) { if (date.getDay() === 0) return { counted: false, reason: "Sunday (not counted)" };
+function evaluateRescissionDay(date) { if (date.getDay() === 0) { return { counted: false, label: "Sunday (not counted)" }; }
 
-const holidayName = getHolidayName(date); if (holidayName) { return { counted: false, reason: ${holidayName} (not counted) }; }
+const holidayName = getHolidayName(date); if (holidayName) { return { counted: false, label: ${holidayName} (not counted) }; }
 
-return { counted: true, reason: "Counted" }; }
+return { counted: true, label: "Counted" }; }
 
 function calculateRescission(signingDateString) { if (!signingDateString) return null;
 
@@ -40,13 +36,7 @@ const signingDate = new Date(${signingDateString}T00:00:00); if (Number.isNaN(si
 
 const days = []; let current = new Date(signingDate); let counted = 0;
 
-while (counted < 3) { const evaluation = isBusinessDayForRescission(current); const label = evaluation.counted ? Day ${counted + 1} : evaluation.reason;
-
-days.push({
-  date: new Date(current),
-  counted: evaluation.counted,
-  label,
-});
+while (counted < 3) { const evaluation = evaluateRescissionDay(current); days.push({ date: new Date(current), counted: evaluation.counted, label: evaluation.counted ? Day ${counted + 1} : evaluation.label, });
 
 if (evaluation.counted) counted += 1;
 if (counted < 3) current = addDays(current, 1);
@@ -107,7 +97,7 @@ const estimates = getShippingEstimates(settings);
 setShippingCost(String(estimates[shippingType] || 0));
 
 setSettingsSaved(true);
-setTimeout(() => setSettingsSaved(false), 1800);
+setTimeout(() => setSettingsSaved(false), 1600);
 
 };
 
@@ -169,7 +159,7 @@ return {
 
 const rescission = useMemo(() => calculateRescission(signingDate), [signingDate]);
 
-return ( <> <main className="page"> <div className="card"> <section className="hero"> <div className="heroTop"> <div> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Toolkit</h1> <p className="heroText"> Evaluate assignment profitability fast, save your usual cost assumptions, and calculate rescission dates in seconds. </p> </div> </div>
+return ( <> <main className="page"> <div className="card"> <section className="hero"> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Toolkit</h1> <p className="heroText"> Evaluate assignment profitability fast, save your usual cost assumptions, and calculate rescission dates in seconds. </p>
 
 <div className="toolTabs">
           <button
@@ -198,147 +188,127 @@ return ( <> <main className="page"> <div className="card"> <section className="h
 
       <section className="contentWrap">
         {activeTool === "settings" && (
-          <section className="settingsPanel soloSection">
-            <p className="settingsEyebrow">Saved Defaults</p>
-            <h2 className="sectionTitle">Settings</h2>
-            <p className="settingsText">
-              Save your usual assumptions here. The fee calculator will use
-              these values as starting points, but you can still change them
-              per assignment.
-            </p>
-
-            <div className="settingsGrid">
-              <div className="settingsCard">
-                <h3>Mileage Defaults</h3>
-                <label>
-                  <span>Default Cost Per Mile</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={settings.costPerMile}
-                    onChange={(e) =>
-                      setSettings({ ...settings, costPerMile: e.target.value })
-                    }
-                  />
-                </label>
-                <p className="helperText">
-                  Used to estimate travel cost for each assignment.
-                </p>
-              </div>
-
-              <div className="settingsCard">
-                <h3>Printing Defaults</h3>
-                <label>
-                  <span>Default Cost Per Page</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={settings.costPerPage}
-                    onChange={(e) =>
-                      setSettings({ ...settings, costPerPage: e.target.value })
-                    }
-                  />
-                </label>
-                <p className="helperText">
-                  Your usual cost including paper and ink or toner.
-                </p>
-              </div>
-
-              <div className="settingsCard">
-                <h3>Scanback Defaults</h3>
-                <label>
-                  <span>Default Scanback Fee</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={settings.scanbackFee}
-                    onChange={(e) =>
-                      setSettings({ ...settings, scanbackFee: e.target.value })
-                    }
-                  />
-                </label>
-                <p className="helperText">
-                  Covers extra scanning, uploading, and admin time.
-                </p>
-              </div>
-
-              <div className="settingsCard">
-                <h3>Shipping Defaults</h3>
-                <div className="shippingDefaultsGrid">
-                  <label>
-                    <span>Standard</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={settings.shippingStandard}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          shippingStandard: e.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Expedited</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={settings.shippingExpedited}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          shippingExpedited: e.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Overnight</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={settings.shippingOvernight}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          shippingOvernight: e.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                </div>
-                <p className="helperText">
-                  Used to auto-fill shipping when you toggle it on.
-                </p>
-              </div>
-            </div>
-
-            <div className="settingsActions">
-              <button type="button" className="saveButton" onClick={saveSettings}>
-                {settingsSaved ? "Saved" : "Save Settings"}
-              </button>
-              <button type="button" className="resetButton" onClick={resetSettings}>
-                Reset to Defaults
-              </button>
-              <p className="settingsNote">
-                Settings are saved on this device and browser.
+          <section className="soloSection">
+            <div className="panel settingsPanel">
+              <p className="settingsEyebrow">Saved Defaults</p>
+              <h2 className="sectionTitle">Settings</h2>
+              <p className="settingsText">
+                Save your usual assumptions here. The fee calculator will use these
+                values as starting points, but you can still change them per assignment.
               </p>
+
+              <div className="settingsGrid">
+                <div className="settingsCard">
+                  <h3>Mileage Defaults</h3>
+                  <label>
+                    <span>Default Cost Per Mile</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={settings.costPerMile}
+                      onChange={(e) =>
+                        setSettings({ ...settings, costPerMile: e.target.value })
+                      }
+                    />
+                  </label>
+                  <p className="helperText">Used to estimate travel cost for each assignment.</p>
+                </div>
+
+                <div className="settingsCard">
+                  <h3>Printing Defaults</h3>
+                  <label>
+                    <span>Default Cost Per Page</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={settings.costPerPage}
+                      onChange={(e) =>
+                        setSettings({ ...settings, costPerPage: e.target.value })
+                      }
+                    />
+                  </label>
+                  <p className="helperText">Your usual cost including paper and ink or toner.</p>
+                </div>
+
+                <div className="settingsCard">
+                  <h3>Scanback Defaults</h3>
+                  <label>
+                    <span>Default Scanback Fee</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={settings.scanbackFee}
+                      onChange={(e) =>
+                        setSettings({ ...settings, scanbackFee: e.target.value })
+                      }
+                    />
+                  </label>
+                  <p className="helperText">Covers extra scanning, uploading, and admin time.</p>
+                </div>
+
+                <div className="settingsCard">
+                  <h3>Shipping Defaults</h3>
+                  <div className="shippingDefaultsGrid">
+                    <label>
+                      <span>Standard</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={settings.shippingStandard}
+                        onChange={(e) =>
+                          setSettings({ ...settings, shippingStandard: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Expedited</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={settings.shippingExpedited}
+                        onChange={(e) =>
+                          setSettings({ ...settings, shippingExpedited: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Overnight</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={settings.shippingOvernight}
+                        onChange={(e) =>
+                          setSettings({ ...settings, shippingOvernight: e.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                  <p className="helperText">Used to auto-fill shipping when you toggle it on.</p>
+                </div>
+              </div>
+
+              <div className="settingsActions">
+                <button type="button" className="saveButton" onClick={saveSettings}>
+                  {settingsSaved ? "Saved" : "Save Settings"}
+                </button>
+                <button type="button" className="resetButton" onClick={resetSettings}>
+                  Reset to Defaults
+                </button>
+                <p className="settingsNote">Settings are saved on this device and browser.</p>
+              </div>
             </div>
           </section>
         )}
 
         {activeTool === "fee" && (
-          <div className="contentGrid soloSection">
+          <section className="soloSection feeGrid">
             <div className="panel softPanel">
-              <h2 className="sectionTitle">Signing Service Fee Calculator</h2>
+              <h2 className="sectionTitle">Fee Calculator</h2>
 
               <div className="formGrid">
                 <label>
                   <span>Offered Fee</span>
-                  <small className="fieldHint">
-                    What the company is offering for this assignment
-                  </small>
+                  <small className="fieldHint">What the company is offering for this assignment</small>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -456,7 +426,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                         <option value="overnight">Overnight</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Shipping Cost</span>
                       <input
@@ -474,9 +443,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                     <input
                       type="checkbox"
                       checked={includeAdditionalCosts}
-                      onChange={() =>
-                        setIncludeAdditionalCosts(!includeAdditionalCosts)
-                      }
+                      onChange={() => setIncludeAdditionalCosts(!includeAdditionalCosts)}
                     />
                     <span>Include Additional Costs</span>
                   </label>
@@ -519,9 +486,9 @@ return ( <> <main className="page"> <div className="card"> <section className="h
               </div>
 
               <div className="tipBox">
-                Tip: use round-trip miles so the estimate reflects the full
-                assignment, not just the drive there. Shipping estimates use
-                your saved defaults, but you can always override them.
+                Tip: use round-trip miles so the estimate reflects the full assignment,
+                not just the drive there. Shipping estimates use your saved defaults,
+                but you can always override them.
               </div>
             </div>
 
@@ -539,7 +506,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                   <p className="label">Net Profit</p>
                   <h3>{formatCurrency(feeValues.netProfit)}</h3>
                 </div>
-
                 <div className="statCard statExpense">
                   <p className="label">Total Expenses</p>
                   <h3>{formatCurrency(feeValues.totalExpenses)}</h3>
@@ -549,58 +515,21 @@ return ( <> <main className="page"> <div className="card"> <section className="h
               <div className="panel">
                 <h2 className="sectionTitle">Breakdown</h2>
                 <div className="rows">
-                  <div className="row">
-                    <span>Fee</span>
-                    <strong>{formatCurrency(feeValues.totalFee)}</strong>
-                  </div>
-                  <div className="row">
-                    <span>Mileage Cost</span>
-                    <strong>{formatCurrency(feeValues.mileageCost)}</strong>
-                  </div>
-                  {includePrinting && (
-                    <div className="row">
-                      <span>Printing</span>
-                      <strong>{formatCurrency(feeValues.printCost)}</strong>
-                    </div>
-                  )}
-                  {includeScanbacks && (
-                    <div className="row">
-                      <span>Scanbacks</span>
-                      <strong>{formatCurrency(feeValues.scanCost)}</strong>
-                    </div>
-                  )}
-                  {includeShipping && (
-                    <div className="row">
-                      <span>Shipping</span>
-                      <strong>{formatCurrency(feeValues.shipCost)}</strong>
-                    </div>
-                  )}
-                  {includeAdditionalCosts && (
-                    <div className="row">
-                      <span>Additional Costs</span>
-                      <strong>{formatCurrency(feeValues.extraCost)}</strong>
-                    </div>
-                  )}
+                  <div className="row"><span>Fee</span><strong>{formatCurrency(feeValues.totalFee)}</strong></div>
+                  <div className="row"><span>Mileage Cost</span><strong>{formatCurrency(feeValues.mileageCost)}</strong></div>
+                  {includePrinting && <div className="row"><span>Printing</span><strong>{formatCurrency(feeValues.printCost)}</strong></div>}
+                  {includeScanbacks && <div className="row"><span>Scanbacks</span><strong>{formatCurrency(feeValues.scanCost)}</strong></div>}
+                  {includeShipping && <div className="row"><span>Shipping</span><strong>{formatCurrency(feeValues.shipCost)}</strong></div>}
+                  {includeAdditionalCosts && <div className="row"><span>Additional Costs</span><strong>{formatCurrency(feeValues.extraCost)}</strong></div>}
+                  <div className="row rowHighlight"><span>Net Profit</span><strong>{formatCurrency(feeValues.netProfit)}</strong></div>
                 </div>
               </div>
-
-              <div className="notice">
-                <p>
-                  This calculator provides an estimate only. Actual
-                  profitability depends on your true operating costs, time,
-                  taxes, and any unpaid admin work related to the assignment.
-                </p>
-                <p>
-                  Settings are saved locally in your browser and can be
-                  changed anytime.
-                </p>
-              </div>
             </div>
-          </div>
+          </section>
         )}
 
         {activeTool === "rescission" && (
-          <div className="rescissionWrap soloSection">
+          <section className="soloSection rescissionWrap">
             <div className="panel softPanel">
               <h2 className="sectionTitle">Rescission Calculator</h2>
               <p className="helperText">
@@ -617,7 +546,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
             </div>
 
             {rescission && (
-              <div className="panel" style={{ marginTop: 16 }}>
+              <div className="panel rescissionResults">
                 <h2 className="sectionTitle">Results</h2>
                 <div className="rows">
                   <div className="row">
@@ -630,7 +559,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                   </div>
                 </div>
 
-                <div className="rows" style={{ marginTop: 16 }}>
+                <div className="rows detailsRows">
                   {rescission.days.map((d, i) => (
                     <div className="row" key={i}>
                       <span>{formatLongDate(d.date)}</span>
@@ -640,7 +569,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
                 </div>
               </div>
             )}
-          </div>
+          </section>
         )}
       </section>
     </div>
@@ -672,13 +601,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       background: linear-gradient(135deg, #0f172a, #6d28d9);
       color: white;
       padding: 32px 24px 24px;
-    }
-
-    .heroTop {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
     }
 
     .eyebrow {
@@ -736,17 +658,42 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       max-width: 100%;
     }
 
+    .feeGrid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+    }
+
+    .settingsPanel,
+    .panel,
+    .settingsCard {
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      padding: 20px;
+      background: white;
+    }
+
+    .softPanel {
+      background: #f8fafc;
+    }
+
     .settingsPanel {
       background: #fcfcff;
     }
 
-    .settingsEyebrow {
+    .settingsEyebrow,
+    .label {
       margin: 0 0 6px;
       color: #7c3aed;
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.14em;
       text-transform: uppercase;
+    }
+
+    .label {
+      color: #64748b;
+      margin-bottom: 0;
     }
 
     .sectionTitle {
@@ -770,24 +717,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       margin-top: 18px;
     }
 
-    .contentGrid {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 24px;
-    }
-
-    .settingsCard,
-    .panel {
-      border: 1px solid #e2e8f0;
-      border-radius: 22px;
-      padding: 20px;
-      background: white;
-    }
-
-    .softPanel {
-      background: #f8fafc;
-    }
-
     .settingsCard h3 {
       margin: 0 0 14px;
       font-size: 20px;
@@ -797,7 +726,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     .formGrid,
     .subFieldGrid,
     .shippingBox,
-    .statsGrid {
+    .statsGrid,
+    .rows {
       display: grid;
       gap: 14px;
     }
@@ -824,8 +754,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     .settingsActions,
     .additionalHeader {
       display: flex;
-      align-items: center;
       gap: 12px;
+      align-items: center;
       flex-wrap: wrap;
       margin-top: 18px;
     }
@@ -892,8 +822,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     }
 
     .toggleSection,
-    .rightCol,
-    .rows {
+    .rightCol {
       display: grid;
       gap: 14px;
     }
@@ -911,6 +840,11 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     .toggleRow {
       background: white;
       border: 1px solid #e2e8f0;
+    }
+
+    .row {
+      background: #f8fafc;
+      font-size: 15px;
     }
 
     .toggleGrow {
@@ -994,20 +928,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       background: #faf5ff;
     }
 
-    .label {
-      margin: 0;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #64748b;
-    }
-
-    .snapshotText {
-      margin: 12px 0 0;
-      font-size: 14px;
-    }
-
     .pill {
       display: inline-block;
       margin-top: 12px;
@@ -1054,27 +974,13 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       line-height: 1.1;
     }
 
-    .row {
-      background: #f8fafc;
-      font-size: 15px;
+    .rowHighlight {
+      background: #ede9fe;
     }
 
-    .notice {
-      border: 1px solid #fde68a;
-      background: #fffbeb;
-      color: #92400e;
-      border-radius: 20px;
-      padding: 16px;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .notice p {
-      margin: 0;
-    }
-
-    .notice p + p {
-      margin-top: 10px;
+    .rowHighlight span,
+    .rowHighlight strong {
+      color: #5b21b6;
     }
 
     .rescissionWrap {
@@ -1082,12 +988,18 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       margin: 0 auto;
     }
 
+    .rescissionResults {
+      margin-top: 16px;
+    }
+
+    .detailsRows {
+      margin-top: 16px;
+    }
+
     @media (max-width: 900px) {
-      .heroTop,
-      .settingsGrid,
-      .contentGrid {
-        display: flex;
-        flex-direction: column;
+      .feeGrid,
+      .settingsGrid {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -1119,7 +1031,8 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       .subFieldGrid,
       .shippingBox,
       .shippingDefaultsGrid,
-      .statsGrid {
+      .statsGrid,
+      .feeGrid {
         display: flex;
         flex-direction: column;
       }
