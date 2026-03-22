@@ -331,7 +331,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
         {activeTool === "fee" && (
           <div className="contentGrid soloSection">
             <div className="panel softPanel">
-              <h2 className="sectionTitle">Fee Calculator</h2>
+              <h2 className="sectionTitle">Signing Service Fee Calculator</h2>
 
               <div className="formGrid">
                 <label>
