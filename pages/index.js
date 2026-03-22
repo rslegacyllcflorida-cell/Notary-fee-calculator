@@ -6,19 +6,19 @@ const DEFAULT_SETTINGS = { costPerMile: "0.67", costPerPage: "0.06", scanbackFee
 
 function getShippingEstimates(settings) { return { standard: Number(settings.shippingStandard) || 0, expedited: Number(settings.shippingExpedited) || 0, overnight: Number(settings.shippingOvernight) || 0, }; }
 
-function isSunday(date) { return date.getDay() === 0; }
+// ---------- Rescission helpers (live) ---------- function isSunday(date) { return date.getDay() === 0; // Sunday }
 
-function addDays(date, days) { const result = new Date(date); result.setDate(result.getDate() + days); return result; }
+function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate() + days); return d; }
 
 function formatLongDate(date) { return date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", }); }
 
-function calculateSimpleRescission(signingDateString) { if (!signingDateString) return null;
+function calculateRescission(signingDateString) { if (!signingDateString) return null;
 
 const signingDate = new Date(${signingDateString}T00:00:00); if (Number.isNaN(signingDate.getTime())) return null;
 
 const days = []; let current = new Date(signingDate); let counted = 0;
 
-while (counted < 3) { const sunday = isSunday(current); const isCounted = !sunday;
+// Count 3 business days excluding Sundays (federal holidays to be added later) while (counted < 3) { const sunday = isSunday(current); const isCounted = !sunday;
 
 days.push({
   date: new Date(current),
@@ -35,7 +35,7 @@ const rescissionDeadline = days[days.length - 1].date; const estimatedFunding = 
 
 return { signingDate, rescissionDeadline, estimatedFunding, days, }; }
 
-export default function Home() { const [activeTool, setActiveTool] = useState("fee"); const [showSettings, setShowSettings] = useState(false); const [isPro] = useState(false); const [settingsSaved, setSettingsSaved] = useState(false);
+export default function Home() { const [activeTool, setActiveTool] = useState("fee"); const [showSettings, setShowSettings] = useState(false); const [settingsSaved, setSettingsSaved] = useState(false);
 
 const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
@@ -49,7 +49,7 @@ const [includeShipping, setIncludeShipping] = useState(false); const [shippingTy
 
 const [includeAdditionalCosts, setIncludeAdditionalCosts] = useState(false); const [additionalCosts, setAdditionalCosts] = useState("0"); const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
-const [signingDate, setSigningDate] = useState("");
+// Rescission state (live) const [signingDate, setSigningDate] = useState("");
 
 useEffect(() => { if (typeof window === "undefined") return;
 
@@ -147,9 +147,9 @@ return {
 
 }, [ fee, roundTripMiles, costPerMile, includePrinting, printingCost, includeScanbacks, scanbackCost, includeShipping, shippingCost, includeAdditionalCosts, additionalCosts, ]);
 
-const rescission = useMemo(() => calculateSimpleRescission(signingDate), [signingDate]);
+const rescission = useMemo(() => calculateRescission(signingDate), [signingDate]);
 
-return ( <> <main className="page"> <div className="card"> <section className="hero"> <div className="heroTop"> <div> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Toolkit</h1> <p className="heroText"> Evaluate assignment profitability fast, save your usual cost assumptions, and preview premium tools built for real-world notary work. </p> </div>
+return ( <> <main className="page"> <div className="card"> <section className="hero"> <div className="heroTop"> <div> <p className="eyebrow">Notary Toolkit</p> <h1>Notary Toolkit</h1> <p className="heroText"> Evaluate assignment profitability fast, save your usual cost assumptions, and calculate rescission dates in seconds. </p> </div>
 
 <button
             type="button"
@@ -173,7 +173,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
             className={`tabButton ${activeTool === "rescission" ? "tabActive" : ""}`}
             onClick={() => setActiveTool("rescission")}
           >
-            Rescission 🔒
+            Rescission
           </button>
         </div>
       </section>
@@ -587,67 +587,49 @@ return ( <> <main className="page"> <div className="card"> <section className="h
 
         {activeTool === "rescission" && (
           <div className="rescissionWrap">
-            {!isPro ? (
-              <div className="proCard">
-                <div className="lockBadge">🔒 Pro Feature</div>
+            <div className="rescissionLive">
+              <div className="panel softPanel">
                 <h2 className="sectionTitle">Rescission Calculator</h2>
-                <p className="proText">
-                  Never miss a deadline. Automatically calculate rescission
-                  dates with a cleaner, faster workflow designed for closings.
+                <p className="helperText">
+                  Counts three business days excluding Sundays. (Federal holidays coming next.)
                 </p>
+                <label>
+                  <span>Signing Date</span>
+                  <input
+                    type="date"
+                    value={signingDate}
+                    onChange={(e) => setSigningDate(e.target.value)}
+                  />
+                </label>
+              </div>
 
-                <div className="blurPreview">
-                  <div className="previewPanel">
-                    <label>
-                      <span>Signing Date</span>
-                      <input type="date" disabled />
-                    </label>
-                    <div className="previewResult">
-                      <strong>Rescission Deadline</strong>
-                      <p>Monday, March 23, 2026</p>
+              {rescission && (
+                <div className="panel">
+                  <h2 className="sectionTitle">Results</h2>
+                  <div className="rows">
+                    <div className="row">
+                      <span>Rescission Deadline</span>
+                      <strong>{formatLongDate(rescission.rescissionDeadline)}</strong>
                     </div>
-                    <div className="previewResult">
-                      <strong>Estimated Funding</strong>
-                      <p>Tuesday, March 24, 2026</p>
+                    <div className="row">
+                      <span>Estimated Funding</span>
+                      <strong>{formatLongDate(rescission.estimatedFunding)}</strong>
                     </div>
                   </div>
-                </div>
 
-                <button type="button" className="unlockButton">
-                  Unlock Pro
-                </button>
-              </div>
-            ) : (
-              <div className="rescissionLive">
-                <div className="panel softPanel">
-                  <h2 className="sectionTitle">Rescission Calculator</h2>
-                  <label>
-                    <span>Signing Date</span>
-                    <input
-                      type="date"
-                      value={signingDate}
-                      onChange={(e) => setSigningDate(e.target.value)}
-                    />
-                  </label>
-                </div>
-
-                {rescission && (
-                  <div className="panel">
-                    <h2 className="sectionTitle">Results</h2>
-                    <div className="rows">
-                      <div className="row">
-                        <span>Rescission Deadline</span>
-                        <strong>{formatLongDate(rescission.rescissionDeadline)}</strong>
+                  <div className="rows" style={{ marginTop: 12 }}>
+                    {rescission.days.map((d, i) => (
+                      <div className="row" key={i}>
+                        <span>
+                          {formatLongDate(d.date)}
+                        </span>
+                        <strong>{d.label}</strong>
                       </div>
-                      <div className="row">
-                        <span>Estimated Funding</span>
-                        <strong>{formatLongDate(rescission.estimatedFunding)}</strong>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </section>
@@ -817,8 +799,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
     }
 
     .saveButton,
-    .resetButton,
-    .unlockButton {
+    .resetButton {
       border-radius: 16px;
       padding: 12px 16px;
       font-size: 14px;
@@ -826,8 +807,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       cursor: pointer;
     }
 
-    .saveButton,
-    .unlockButton {
+    .saveButton {
       border: none;
       background: #6d28d9;
       color: white;
@@ -1163,72 +1143,6 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       margin: 0 auto;
     }
 
-    .proCard {
-      border: 1px solid #e2e8f0;
-      border-radius: 24px;
-      padding: 24px;
-      background: linear-gradient(180deg, #ffffff, #faf5ff);
-      text-align: center;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-    }
-
-    .lockBadge {
-      display: inline-block;
-      margin-bottom: 14px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #ede9fe;
-      color: #5b21b6;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .proText {
-      max-width: 620px;
-      margin: 14px auto 0;
-      color: #475569;
-      font-size: 16px;
-      line-height: 1.6;
-    }
-
-    .blurPreview {
-      margin-top: 20px;
-      padding: 18px;
-      border-radius: 22px;
-      background: #f8fafc;
-      overflow: hidden;
-    }
-
-    .previewPanel {
-      filter: blur(3px);
-      pointer-events: none;
-      display: grid;
-      gap: 14px;
-      text-align: left;
-    }
-
-    .previewResult {
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      background: white;
-      padding: 14px 16px;
-    }
-
-    .previewResult strong {
-      display: block;
-      font-size: 14px;
-      color: #334155;
-    }
-
-    .previewResult p {
-      margin: 8px 0 0;
-      font-size: 18px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
     @media (max-width: 900px) {
       .heroTop,
       .contentGrid,
@@ -1254,8 +1168,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       }
 
       .heroText,
-      .settingsText,
-      .proText {
+      .settingsText {
         font-size: 15px;
       }
 
@@ -1279,8 +1192,7 @@ return ( <> <main className="page"> <div className="card"> <section className="h
       .infoButton,
       .settingsButton,
       .saveButton,
-      .resetButton,
-      .unlockButton {
+      .resetButton {
         padding: 12px 16px;
       }
 
