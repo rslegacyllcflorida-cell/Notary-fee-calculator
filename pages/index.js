@@ -602,8 +602,8 @@ export default function Home() {
                     {includeScanbacks && <div className="row"><span>Scanbacks</span><strong>{formatCurrency(feeValues.scanCost)}</strong></div>}
                     {includeShipping && <div className="row"><span>Shipping</span><strong>{formatCurrency(feeValues.shipCost)}</strong></div>}
                     {includeAdditionalCosts && <div className="row"><span>Additional Costs</span><strong>{formatCurrency(feeValues.extraCost)}</strong></div>}
-                    <span>Net Profit</span>
-<strong>{formatCurrency(feeValues.netProfit)}</strong>
+                    <div className="row rowHighlight"><span>Net Profit</span><strong>{formatCurrency(feeValues.netProfit)}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
