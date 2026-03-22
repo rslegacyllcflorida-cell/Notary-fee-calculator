@@ -1,4 +1,4 @@
-// CLEAN STABLE VERSION - SIMPLE + WORKING import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 const formatMoney = (n) => $${Number(n || 0).toFixed(2)};
 
