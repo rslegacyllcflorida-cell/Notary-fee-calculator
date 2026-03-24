@@ -25,13 +25,39 @@ function monthDay(date) {
   return month + "-" + day;
 }
 
-const FEDERAL_HOLIDAYS = [
-  "01-01", // New Year's Day
-  "06-19", // Juneteenth
-  "07-04", // Independence Day
-  "11-11", // Veterans Day
-  "12-25", // Christmas Day
-];
+function nthWeekdayOfMonth(year, month, weekday, nth) {
+  const first = new Date(year, month, 1);
+  const firstWeekday = first.getDay();
+  const offset = (weekday - firstWeekday + 7) % 7;
+  return new Date(year, month, 1 + offset + (nth - 1) * 7);
+}
+
+function lastWeekdayOfMonth(year, month, weekday) {
+  const last = new Date(year, month + 1, 0);
+  const offset = (last.getDay() - weekday + 7) % 7;
+  return new Date(year, month, last.getDate() - offset);
+}
+
+function getFederalHolidayDates(year) {
+  return [
+    "01-01", // New Year's Day
+    "06-19", // Juneteenth
+    "07-04", // Independence Day
+    "11-11", // Veterans Day
+    "12-25", // Christmas Day
+
+    monthDay(nthWeekdayOfMonth(year, 0, 1, 3)),  // MLK Day
+    monthDay(nthWeekdayOfMonth(year, 1, 1, 3)),  // Presidents Day
+    monthDay(lastWeekdayOfMonth(year, 4, 1)),    // Memorial Day
+    monthDay(nthWeekdayOfMonth(year, 8, 1, 1)),  // Labor Day
+    monthDay(nthWeekdayOfMonth(year, 9, 1, 2)),  // Columbus Day
+    monthDay(nthWeekdayOfMonth(year, 10, 4, 4)), // Thanksgiving
+  ];
+}
+
+function isFederalHoliday(date) {
+  return getFederalHolidayDates(date.getFullYear()).includes(monthDay(date));
+}
 
 function isFederalHoliday(date) {
   return FEDERAL_HOLIDAYS.includes(monthDay(date));
