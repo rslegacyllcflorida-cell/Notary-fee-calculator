@@ -108,6 +108,7 @@ export default function Home() {
 
   const [includeShipping, setIncludeShipping] = useState(false);
   const [shippingCost, setShippingCost] = useState(10);
+  const [shippingType, setShippingType] = useState("standard");
 
   const [includeAdditionalCosts, setIncludeAdditionalCosts] = useState(false);
   const [additionalCosts, setAdditionalCosts] = useState(0);
@@ -324,16 +325,48 @@ export default function Home() {
                     </label>
                   )}
 
-                  <label style={rowStyle}>
-                    <span style={{ fontWeight: 700 }}>Include Shipping</span>
-                    <input type="checkbox" checked={includeShipping} onChange={function () { setIncludeShipping(!includeShipping); }} />
-                  </label>
-                  {includeShipping && (
-                    <label>
-                      <div style={{ marginBottom: 8, fontWeight: 700 }}>Shipping Cost</div>
-                      <input style={inputStyle} type="number" value={shippingCost} onChange={function (e) { setShippingCost(Number(e.target.value)); }} />
-                    </label>
-                  )}
+<label style={rowStyle}>
+  <span style={{ fontWeight: 700 }}>Include Shipping</span>
+  <input
+    type="checkbox"
+    checked={includeShipping}
+    onChange={function () { setIncludeShipping(!includeShipping); }}
+  />
+</label>
+
+{includeShipping && (
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+    <label>
+      <div style={{ marginBottom: 8, fontWeight: 700 }}>Delivery Type</div>
+      <select
+        style={inputStyle}
+        value={shippingType}
+        onChange={function (e) {
+          const value = e.target.value;
+          setShippingType(value);
+
+          if (value === "standard") setShippingCost(10);
+          if (value === "expedited") setShippingCost(25);
+          if (value === "overnight") setShippingCost(35);
+        }}
+      >
+        <option value="standard">Standard</option>
+        <option value="expedited">Expedited</option>
+        <option value="overnight">Overnight</option>
+      </select>
+    </label>
+
+    <label>
+      <div style={{ marginBottom: 8, fontWeight: 700 }}>Shipping Cost</div>
+      <input
+        style={inputStyle}
+        type="number"
+        value={shippingCost}
+        onChange={function (e) { setShippingCost(Number(e.target.value)); }}
+      />
+    </label>
+  </div>
+)}
 
                   <label style={rowStyle}>
                     <span style={{ fontWeight: 700 }}>Include Additional Costs</span>
