@@ -59,10 +59,6 @@ function isFederalHoliday(date) {
   return getFederalHolidayDates(date.getFullYear()).includes(monthDay(date));
 }
 
-function isFederalHoliday(date) {
-  return FEDERAL_HOLIDAYS.includes(monthDay(date));
-}
-
 function calculateRescission(signingDateValue) {
   if (!signingDateValue) return null;
 
