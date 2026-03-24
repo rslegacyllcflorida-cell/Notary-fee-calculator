@@ -134,6 +134,7 @@ export default function Home() {
 
   const [includeAdditionalCosts, setIncludeAdditionalCosts] = useState(false);
   const [additionalCosts, setAdditionalCosts] = useState(0);
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
   const [signingDate, setSigningDate] = useState("");
 
@@ -390,16 +391,64 @@ export default function Home() {
   </div>
 )}
 
-                  <label style={rowStyle}>
-                    <span style={{ fontWeight: 700 }}>Include Additional Costs</span>
-                    <input type="checkbox" checked={includeAdditionalCosts} onChange={function () { setIncludeAdditionalCosts(!includeAdditionalCosts); }} />
-                  </label>
-                  {includeAdditionalCosts && (
-                    <label>
-                      <div style={{ marginBottom: 8, fontWeight: 700 }}>Additional Costs</div>
-                      <input style={inputStyle} type="number" value={additionalCosts} onChange={function (e) { setAdditionalCosts(Number(e.target.value)); }} />
-                    </label>
-                  )}
+                <label style={rowStyle}>
+  <span style={{ fontWeight: 700 }}>
+    Include Additional Costs
+    <span
+      style={{
+        marginLeft: 8,
+        cursor: "pointer",
+        border: "1px solid #ccc",
+        borderRadius: "50%",
+        padding: "2px 6px",
+        fontSize: 12,
+      }}
+      onClick={function () {
+        setShowAdditionalInfo(!showAdditionalInfo);
+      }}
+    >
+      ⓘ
+    </span>
+  </span>
+
+  <input
+    type="checkbox"
+    checked={includeAdditionalCosts}
+    onChange={function () {
+      setIncludeAdditionalCosts(!includeAdditionalCosts);
+    }}
+  />
+</label>
+
+{showAdditionalInfo && (
+  <div
+    style={{
+      background: "#f8fafc",
+      padding: 12,
+      borderRadius: 12,
+      fontSize: 13,
+      marginTop: 6,
+      lineHeight: 1.5,
+      border: "1px solid #e2e8f0",
+    }}
+  >
+    Examples: tolls, parking, waiting time, reprints, courier/drop-off costs, or other out-of-pocket expenses.
+  </div>
+)}
+
+{includeAdditionalCosts && (
+  <label>
+    <div style={{ marginBottom: 8, fontWeight: 700 }}>Additional Costs</div>
+    <input
+      style={inputStyle}
+      type="number"
+      value={additionalCosts}
+      onChange={function (e) {
+        setAdditionalCosts(Number(e.target.value));
+      }}
+    />
+  </label>
+)}
                 </div>
               </div>
 
