@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function formatMoney(value) {
   return "$" + Number(value || 0).toFixed(2);
@@ -136,8 +136,24 @@ export default function Home() {
   const [additionalCosts, setAdditionalCosts] = useState(0);
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
+  
   const [signingDate, setSigningDate] = useState("");
 
+  useEffect(function () {
+  function checkMobile() {
+    setIsMobile(window.innerWidth <= 768);
+  }
+
+  checkMobile(); // run once on load
+
+  window.addEventListener("resize", checkMobile);
+
+  return function () {
+    window.removeEventListener("resize", checkMobile);
+  };
+}, []);
+  
   const feeCalc = useMemo(function () {
     const mileageCost = Number(miles || 0) * Number(costPerMile || 0);
     const printingCost = includePrinting
@@ -202,16 +218,17 @@ export default function Home() {
     background: "white",
   };
 
-  const rowStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: 18,
-    padding: "14px 16px",
-  };
+const rowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  alignItems: isMobile ? "flex-start" : "center",
+  flexDirection: isMobile ? "column" : "row",
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  borderRadius: 18,
+  padding: "14px 16px",
+};
 
   return (
     <main
@@ -296,11 +313,17 @@ export default function Home() {
 
         <section style={{ padding: 24 }}>
           {activeTab === "fees" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 24 }}>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+    gap: 24,
+  }}
+>
               <div style={{ ...cardStyle, background: "#f8fafc" }}>
                 <h2 style={{ margin: 0, fontSize: 32 }}>Signing Fee Calculator</h2>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginTop: 18 }}>
                   <label>
                     <div style={{ marginBottom: 8, fontWeight: 700 }}>Offered Fee</div>
                     <input style={inputStyle} type="number" value={fee} onChange={function (e) { setFee(Number(e.target.value)); }} />
@@ -321,7 +344,7 @@ export default function Home() {
                     <input type="checkbox" checked={includePrinting} onChange={function () { setIncludePrinting(!includePrinting); }} />
                   </label>
                   {includePrinting && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
                       <label>
                         <div style={{ marginBottom: 8, fontWeight: 700 }}>Total Pages</div>
                         <input style={inputStyle} type="number" value={pages} onChange={function (e) { setPages(Number(e.target.value)); }} />
@@ -358,7 +381,13 @@ export default function Home() {
 </label>
 
 {includeShipping && (
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+    gap: 14,
+  }}
+>
     <label>
       <div style={{ marginBottom: 8, fontWeight: 700 }}>Delivery Type</div>
       <select
@@ -460,7 +489,13 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+    gap: 16,
+  }}
+>
                   <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#a7f3d0" }}>
                     <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#64748b" }}>Net Profit</div>
                     <h3 style={{ margin: "10px 0 0", fontSize: 34 }}>{formatMoney(feeCalc.netProfit)}</h3>
@@ -559,7 +594,14 @@ export default function Home() {
                 <p style={{ marginTop: 10, color: "#475569", lineHeight: 1.55 }}>
                   Keep your preferred defaults here. You can still change numbers inside the fee calculator whenever needed.
                 </p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 18 }}>
+              <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+    gap: 16,
+    marginTop: 18,
+  }}
+>
                   <label>
                     <div style={{ marginBottom: 8, fontWeight: 700 }}>Default Cost Per Mile</div>
                     <input style={inputStyle} type="number" value={costPerMile} onChange={function (e) { setCostPerMile(Number(e.target.value)); }} />
